@@ -1,4 +1,4 @@
-use ndarray::{Array, Array1, Array2, NdFloat};
+use ndarray::{Array, Array1, Array2, NdFloat, Axis};
 use ndarray_linalg::*;
 use cauchy::Scalar;
 use lax::Lapack;
@@ -33,15 +33,11 @@ impl<F: NdFloat + FromPrimitive + Scalar + Lapack, T: ConvProblem<Elem = F>> DII
     }
 
     fn diis_step(&self, prev: &Array<T::Elem, T::Dim>, curr: &Array<T::Elem, T::Dim>) -> Array<T::Elem, T::Dim> {
-        let mut A: Array2<T::Elem> = Array2::zeros((self.depth+1, self.depth+1));
+        let mut A: Array2<T::Elem> = Array2::from_elem((self.depth+1, self.depth+1), F::from_f64(-1.0).unwrap());
         let mut b: Array1<T::Elem> = Array1::zeros(self.depth+1);
 
         b[self.depth] = F::from_f64(-1.0).unwrap();
-        for i in 0..self.depth+1 {
-            A[[i, self.depth]] = F::from_f64(-1.0).unwrap();
-            A[[self.depth, i]] = F::from_f64(-1.0).unwrap();
 
-        }
         A[[self.depth, self.depth]] = F::from_f64(0.0).unwrap();
 
         let coef = A.solve(&b).unwrap();

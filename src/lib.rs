@@ -1,13 +1,13 @@
 use ndarray::{Array, Array1, Ix1, array};
 use crate::core::*;
 use crate::solver::*;
-use crate::solvers::linear::*;
-use crate::solvers::DIIS::*;
+use crate::algorithms::linear::*;
+use crate::algorithms::DIIS::*;
 use approx::assert_relative_eq;
 
 pub mod core;
 pub mod solver;
-pub mod solvers;
+pub mod algorithms;
 
 #[cfg(test)]
 mod tests {
