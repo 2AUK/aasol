@@ -37,7 +37,8 @@ impl<F: ConvFloat, T: ConvProblem<Elem = F>> DIIS<F, T> {
     fn diis_step(&mut self, prev: &Array<T::Elem, T::Dim>, curr: &Array<T::Elem, T::Dim>) -> Array<T::Elem, T::Dim> {
         let mut A: Array2<T::Elem> = Array2::from_elem((self.depth+1, self.depth+1), F::from_f64(-1.0).unwrap());
         let mut b: Array1<T::Elem> = Array1::zeros(self.depth+1);
-        let c_A: Array<T::Elem, T::Dim> = Array::zeros(self.memory_vec[0].dim());
+        let mut c_A: Array<T::Elem, T::Dim> = Array::zeros(self.memory_vec[0].dim());
+        let mut min_res: Array<T::Elem, T::Dim> = Array::zeros(self.memory_vec[0].dim());
 
         b[self.depth] = F::from_f64(-1.0).unwrap();
 
@@ -59,24 +60,19 @@ impl<F: ConvFloat, T: ConvProblem<Elem = F>> DIIS<F, T> {
 
         println!("{}", coef);
         for (i, arr) in self.memory_vec.iter().cloned().enumerate() {
-            println!("{}, {}", i, &arr);
-            c_A += coef[i] * arr;
+            c_A += &(arr * coef[i]);
+            min_res += &(self.residuals_vec[i].clone() * coef[i]);
         }
-        /*
-        Zip::from(&mut c_A)
-            .and_broadcast(&coef)
-            .and_broadcast(&fr)
-            .for_each(|w, &c, &arr| {
-                *w += c * arr;
-            });
-        */
+
+        let c_new = min_res * self.eta + c_A;
 
         self.memory_vec.push_back(curr.clone());
         self.residuals_vec.push_back(curr.clone()-prev.clone());
 
         self.memory_vec.pop_front().unwrap();
         self.residuals_vec.pop_front().unwrap();
-        curr.clone()
+
+        c_new
     }
 }
 
@@ -93,8 +89,8 @@ where
             return out;
         } else {
             let out = self.diis_step(&prev, &curr);
+            println!("{}", out);
             return out;
         }
-
     }
 }

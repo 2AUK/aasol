@@ -45,9 +45,9 @@ mod tests {
     #[test]
     fn run_linear_test_problem() {
         let problem = TestProblem::new(1.0, 1.0);
-        let mixer = DIIS::new(0.68, 8, 10);
+        let mixer = DIIS::new(0.5, 5, 10);
         let solution = Solver::new(mixer, problem, array![1.0])
-            .max_iters(500)
+            .max_iters(50000)
             .tolerance(std::f64::EPSILON)
             .run();
         println!("\n{:?}\n", solution);
