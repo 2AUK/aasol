@@ -8,6 +8,7 @@ use approx::assert_relative_eq;
 pub mod core;
 pub mod solver;
 pub mod algorithms;
+pub mod types;
 
 #[cfg(test)]
 mod tests {

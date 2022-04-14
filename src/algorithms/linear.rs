@@ -1,14 +1,13 @@
 use crate::solver::*;
 use crate::core::*;
-use ndarray::{Array, NdFloat};
-use num::traits::float::Float;
-use num::traits::FromPrimitive;
+use crate::types::*;
+use ndarray::{Array};
 
 pub struct LinearDamping<F> {
     pub eta: F,
 }
 
-impl<F: NdFloat + FromPrimitive> LinearDamping<F> {
+impl<F: ConvFloat> LinearDamping<F> {
     pub fn new(eta: F) -> Self {
         LinearDamping {
             eta,
@@ -18,7 +17,7 @@ impl<F: NdFloat + FromPrimitive> LinearDamping<F> {
 
 impl<T, F> Converger<T> for LinearDamping<F>
 where
-    F: NdFloat + FromPrimitive,
+    F: ConvFloat,
     T: ConvProblem<Elem = F>,
 {
     fn next_iter(&mut self, problem: &mut T, state: &mut ConvState<T>) -> Array<T::Elem, T::Dim> {

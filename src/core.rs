@@ -1,17 +1,46 @@
-use ndarray::{NdFloat, Array, Dimension};
+use ndarray::{Array, Dimension};
 use num::traits::float::Float;
-use num::traits::FromPrimitive;
+use crate::types::*;
 
-pub enum Termination {
+pub enum TerminationReason {
+    /// Solver not terminated yet
+    NotTerminated,
+    /// Max number of iterations reached
     MaxIterReached,
+    /// Target tolerance reached
     ToleranceReached,
 }
 
+impl TerminationReason {
+    fn terminated(self) -> bool {
+        !matches!(self, TerminationReason::NotTerminated)
+    }
+
+    fn text(&self) -> &str {
+        match *self {
+            TerminationReason::NotTerminated => "Not terminated",
+            TerminationReason::MaxIterReached => "Maximum number of iterations reached",
+            TerminationReason::ToleranceReached => "Target tolerance reached",
+        }
+    }
+}
+
+impl std::fmt::Display for TerminationReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.text())
+    }
+}
+
+impl Default for TerminationReason {
+    fn default() -> Self {
+        TerminationReason::NotTerminated
+    }
+}
 /// Trait required for the representation of a convergence problem
 pub trait ConvProblem {
 
     /// Types of elements in an NdArray
-    type Elem: NdFloat + FromPrimitive;
+    type Elem: ConvFloat;
 
     /// Number of dimensions in NdArray
     type Dim: Dimension;
@@ -40,6 +69,8 @@ pub struct ConvState<T: ConvProblem> {
     pub max_iterations: u64,
     /// Tolerance below which solver stops
     pub tolerance: T::Elem,
+    /// Termination reason
+    pub termination_reason: TerminationReason,
 }
 
 impl<T: ConvProblem> ConvState<T> {
@@ -56,6 +87,7 @@ impl<T: ConvProblem> ConvState<T> {
             iter: 0,
             max_iterations: std::u64::MAX,
             tolerance: T::Elem::infinity(),
+            termination_reason: TerminationReason::NotTerminated,
         }
     }
 }
