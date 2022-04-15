@@ -1,7 +1,9 @@
 use ndarray::{Array, Array1, Array2, Zip, Ix1};
+use ndarray_stats::QuantileExt;
 use ndarray_linalg::*;
 use std::iter::FromIterator;
 use std::collections::VecDeque;
+use num::Float;
 use crate::solver::*;
 use crate::core::*;
 use crate::types::*;
@@ -12,7 +14,7 @@ pub struct DIIS<F, T: ConvProblem> {
     pub restart: i64,
     memory_vec: VecDeque<Array<T::Elem, T::Dim>>,
     residuals_vec: VecDeque<Array<T::Elem, T::Dim>>,
-    RMS_vec: VecDeque<F>,
+    rms_vec: VecDeque<F>,
 }
 
 impl<F: ConvFloat, T: ConvProblem<Elem = F>> DIIS<F, T> {
@@ -23,7 +25,7 @@ impl<F: ConvFloat, T: ConvProblem<Elem = F>> DIIS<F, T> {
             restart,
             memory_vec: VecDeque::new(),
             residuals_vec: VecDeque::new(),
-            RMS_vec: VecDeque::new(),
+            rms_vec: VecDeque::new(),
         }
     }
 
@@ -58,7 +60,6 @@ impl<F: ConvFloat, T: ConvProblem<Elem = F>> DIIS<F, T> {
                 self.memory_vec.iter().cloned()
             ));
 
-        println!("{}", coef);
         for (i, arr) in self.memory_vec.iter().cloned().enumerate() {
             c_A += &(arr * coef[i]);
             min_res += &(self.residuals_vec[i].clone() * coef[i]);
@@ -74,6 +75,14 @@ impl<F: ConvFloat, T: ConvProblem<Elem = F>> DIIS<F, T> {
 
         c_new
     }
+
+    fn compute_rms(&mut self, prev: &Array<T::Elem, T::Dim>, curr: &Array<T::Elem, T::Dim>) -> T::Elem {
+        let prefac = F::from_f64(1.0 / curr.len() as f64).unwrap();
+        let curr_minus_prev = (curr - prev).sum();
+        let result = prefac * Float::powf(curr_minus_prev, F::from_f64(2.0).unwrap());
+
+        result
+    }
 }
 
 impl<T, F> Converger<T> for DIIS<F, T>
@@ -86,10 +95,24 @@ where
         let curr = problem.update(&prev);
         if self.memory_vec.len() < self.depth {
             let out = self.linear_mixing_step(&prev, &curr);
+            let rms = self.compute_rms(&prev, &out);
+            self.rms_vec.push_back(rms);
             return out;
         } else {
-            let out = self.diis_step(&prev, &curr);
-            println!("{}", out);
+            let mut out = self.diis_step(&prev, &curr);
+            let rms = self.compute_rms(&prev, &out);
+            let min_val  = self.rms_vec.iter().fold(F::infinity(), |a, &b| a.min(b));
+            let min_index = self.rms_vec.iter().position(|&x| x == min_val).unwrap();
+
+            if rms > F::from_i64(self.restart).unwrap() * min_val {
+                println!("Restarting...");
+                out = self.memory_vec[min_index].clone();
+                self.memory_vec.clear();
+                self.residuals_vec.clear();
+                self.rms_vec.clear();
+            }
+            self.rms_vec.push_back(rms);
+            self.rms_vec.pop_front();
             return out;
         }
     }
