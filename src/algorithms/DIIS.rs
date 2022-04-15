@@ -1,5 +1,4 @@
-use ndarray::{Array, Array1, Array2, Zip, Ix1};
-use ndarray_stats::QuantileExt;
+use ndarray::{Array, Array1, Array2, Ix1};
 use ndarray_linalg::*;
 use std::iter::FromIterator;
 use std::collections::VecDeque;
@@ -105,7 +104,6 @@ where
             let min_index = self.rms_vec.iter().position(|&x| x == min_val).unwrap();
 
             if rms > F::from_i64(self.restart).unwrap() * min_val {
-                println!("Restarting...");
                 out = self.memory_vec[min_index].clone();
                 self.memory_vec.clear();
                 self.residuals_vec.clear();
