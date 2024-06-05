@@ -1,4 +1,3 @@
-# DIIS-rs [WIP]
+# aasol 
 
-A minimal library for solving fixed-point problems quickly.
-Written with sets of non-linear equations in mind.
+Anderson Acceleration Solver (aasol) for rapidly solving nonlinear systems of equations.
